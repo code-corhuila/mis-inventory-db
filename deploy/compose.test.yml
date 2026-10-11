@@ -1,0 +1,3 @@
+include:
+  - ${MIS_INFRA_POSTGRES_PATH:?MIS_INFRA_POSTGRES_PATH required}/postgres/compose.yml
+  - ./compose.yml
