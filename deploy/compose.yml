@@ -1,0 +1,16 @@
+services:
+  inventory-db-migrate:
+    image: liquibase/liquibase:4.31.1
+    working_dir: /liquibase/changelog
+    environment:
+      LIQUIBASE_COMMAND_URL: jdbc:postgresql://postgres:5432/${PG_DATABASE:?PG_DATABASE required}
+      LIQUIBASE_COMMAND_USERNAME: ${PG_ADMIN_USER:?PG_ADMIN_USER required}
+      LIQUIBASE_COMMAND_PASSWORD: ${PG_ADMIN_PASSWORD:?PG_ADMIN_PASSWORD required}
+    command: [--changelog-file=changelog/master.yaml, --database-changelog-table-name=databasechangelog_inventory, --database-changelog-lock-table-name=databasechangeloglock_inventory, update]
+    volumes:
+      - ..:/liquibase/changelog:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [platform]
+    restart: 'no'

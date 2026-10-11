@@ -1,0 +1,21 @@
+name: Inventory migration checks
+on:
+  pull_request:
+    branches: [develop, qa]
+permissions:
+  contents: read
+concurrency:
+  group: inventory-db-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse migration acceptance script
+        shell: pwsh
+        run: |
+          $tokens=$null; $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD/tests/Test-Migrations.ps1",[ref]$tokens,[ref]$errors) | Out-Null
+          if ($errors.Count) { throw ($errors -join "`n") }
