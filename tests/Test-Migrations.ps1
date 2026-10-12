@@ -13,10 +13,10 @@ try {
     docker compose @options up -d --wait --wait-timeout 120 postgres
     if($LASTEXITCODE -ne 0) { throw 'No inicio el PostgreSQL desechable.' }
     foreach($action in @('first','second','rollback','rebuild')) {
-        if($action -eq 'rollback') { docker compose @options run --rm inventory-db-migrate @migration rollback-count --count=5 }
+        if($action -eq 'rollback') { docker compose @options run --rm inventory-db-migrate @migration rollback-count --count=6 }
         else { docker compose @options run --rm inventory-db-migrate }
         if($LASTEXITCODE -ne 0) { throw "Fallo de migracion: $action" }
-        $expected=if($action -eq 'rollback') {'0'} else {'5'}
+        $expected=if($action -eq 'rollback') {'0'} else {'6'}
         $query='SELECT count(*) FROM public.databasechangelog_inventory;'
         $count=$query | docker compose @options exec -T postgres sh -ec 'exec psql -v ON_ERROR_STOP=1 -qAt -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
         if($LASTEXITCODE -ne 0 -or $count -ne $expected) { throw 'Historial inesperado.' }
@@ -26,7 +26,7 @@ try {
             if($LASTEXITCODE -ne 0 -or $count -ne '0') { throw 'Rollback no retiro el esquema.' }
         }
     }
-    docker compose @options run --rm inventory-db-migrate @migration rollback-count --count=3
+    docker compose @options run --rm inventory-db-migrate @migration rollback-count --count=4
     if($LASTEXITCODE -ne 0) { throw 'No retiro migracion vacia de salidas.' }
     $query=@'
 INSERT INTO inventory.lot(id,medication_id,supplier_id,lot_number,expires_on,available)
@@ -56,7 +56,8 @@ COMMIT;
 '@
     $query | docker compose @options exec -T postgres sh -ec 'exec psql -v ON_ERROR_STOP=1 -qAt -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
     if($LASTEXITCODE -ne 0) { throw 'No preparo rechazo de rollback con salidas.' }
-    docker compose @options run --rm inventory-db-migrate @migration rollback-count --count=1
+    & "$PSScriptRoot/Test-RelayPermissions.ps1" -ComposeOptions $options
+    docker compose @options run --rm inventory-db-migrate @migration rollback-count --count=2
     if($LASTEXITCODE -ne 0) { throw 'Rollback de inbox vacio fallo.' }
     $nativePreference=$PSNativeCommandUseErrorActionPreference
     $PSNativeCommandUseErrorActionPreference=$false
@@ -83,6 +84,8 @@ SELECT count(*) FROM inventory.stock_event_inbox;
     $query="SELECT has_column_privilege('inventory_app','inventory.stock_event_inbox','payload_hash','UPDATE')::int || ',' || has_table_privilege('inventory_app','inventory.stock_event_inbox','DELETE')::int || ',' || has_column_privilege('inventory_app','inventory.stock_event_checkpoint','last_sequence','UPDATE')::int || ',' || has_column_privilege('inventory_app','inventory.stock_event_checkpoint','lot_id','UPDATE')::int;"
     $privileges=$query | docker compose @options exec -T postgres sh -ec 'exec psql -v ON_ERROR_STOP=1 -qAt -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
     if($LASTEXITCODE -ne 0 -or $privileges -ne '0,0,1,0') { throw 'Privilegios de inbox/checkpoint excesivos.' }
+    docker compose @options run --rm inventory-db-migrate @migration rollback-count --count=1
+    if($LASTEXITCODE -ne 0) { throw 'Rollback del rol relay fallo.' }
     $nativePreference=$PSNativeCommandUseErrorActionPreference
     try {
         $PSNativeCommandUseErrorActionPreference=$false
@@ -94,7 +97,11 @@ SELECT count(*) FROM inventory.stock_event_inbox;
     if($LASTEXITCODE -ne 0 -or $state -ne '1,1,5,8') { throw 'Rollback altero evidencia, historial o saldo.' }
     docker compose @options run --rm inventory-db-migrate
     if($LASTEXITCODE -ne 0) { throw 'Reaplicacion no preservo historial.' }
-    Write-Output 'PASS: cinco changesets repetibles, rollback vacio, upgrade, outbox/inbox protegidos y permisos restringidos de inventory_app.'
+    $count='SELECT count(*) FROM public.databasechangelog_inventory;' | docker compose @options exec -T postgres sh -ec 'exec psql -v ON_ERROR_STOP=1 -qAt -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+    if($LASTEXITCODE -ne 0 -or $count -ne '6') { throw 'No restauro los seis changesets.' }
+    docker compose @options run --rm inventory-db-migrate
+    if($LASTEXITCODE -ne 0) { throw 'Reejecucion final fallo.' }
+    Write-Output 'PASS: seis changesets repetibles, rollback vacio, upgrade, evidencia protegida y permisos restringidos de aplicacion/relay.'
 } finally {
     # Se elimina exclusivamente el proyecto aleatorio de esta prueba, nunca mis-dev.
     docker compose @options down -v
