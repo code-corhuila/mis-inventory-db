@@ -30,6 +30,7 @@ Owns only `inventory`: lots, entries, stock exits, movements, request snapshots
 and the transactional stock-change outbox. Medication and supplier UUIDs are
 external references validated by APIs, not cross-domain foreign keys or reads.
 The four existing Liquibase changesets and SQL files retain their applied content.
+An additional fifth changeset adds the consumer inbox/checkpoint without changing them.
 Historical movements are preserved without synthesizing historical events.
 The outbox is storage only: no relay, consumer or alert delivery is implemented here.
 
@@ -58,3 +59,12 @@ runtime services must use their restricted application identity instead.
 Rollback guards reject persisted outbox events and confirmed exits. The initial
 schema rollback is destructive and is exercised only on an empty disposable database.
 Production recovery requires a reviewed backup/forward migration, not this test script.
+
+## Event Inbox Preparation
+
+`inventory.stock_event_inbox` and `inventory.stock_event_checkpoint` prepare
+Inventory-owned receipt/audit and per-lot ordering storage. The owner API's atomic
+deduplication/effect logic is implemented separately; these tables alone do not
+prove delivery or close HU-EVT-001. See docs/ADR-EVT-003-inbox-storage.md.
+Migration acceptance also checks empty inbox rollback, retained evidence on
+rejected rollback, and restricted grants using the actual inventory_app login.
