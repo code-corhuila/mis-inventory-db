@@ -68,3 +68,10 @@ deduplication/effect logic is implemented separately; these tables alone do not
 prove delivery or close HU-EVT-001. See docs/ADR-EVT-003-inbox-storage.md.
 Migration acceptance also checks empty inbox rollback, retained evidence on
 rejected rollback, and restricted grants using the actual inventory_app login.
+
+## Relay Database Capabilities
+
+The sixth changeset adds `inventory_relay`, a NOLOGIN role restricted to outbox
+reads and delivery metadata updates. No live login/password is provisioned.
+See docs/ADR-EVT-004-relay-database-capabilities.md. Migration acceptance also
+checks a synthetic TCP login and actual rejection of stock/payload/inbox writes.
