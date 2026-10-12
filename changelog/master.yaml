@@ -38,3 +38,11 @@ databaseChangeLog:
         - sqlFile: {path: ../01_ddl/004_event_inbox.sql, relativeToChangelogFile: true}
       rollback:
         - sqlFile: {path: ../01_ddl/004_event_inbox_rollback.sql, relativeToChangelogFile: true, splitStatements: false}
+  - changeSet:
+      id: inventory-relay-grants-001
+      author: julian1614
+      labels: HU-EVT-001
+      changes:
+        - sqlFile: {path: ../03_dcl/002_relay.sql, relativeToChangelogFile: true}
+      rollback:
+        - sqlFile: {path: ../03_dcl/002_relay_rollback.sql, relativeToChangelogFile: true}

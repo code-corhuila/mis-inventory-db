@@ -17,5 +17,7 @@ jobs:
         shell: pwsh
         run: |
           $tokens=$null; $errors=$null
-          [System.Management.Automation.Language.Parser]::ParseFile("$PWD/tests/Test-Migrations.ps1",[ref]$tokens,[ref]$errors) | Out-Null
-          if ($errors.Count) { throw ($errors -join "`n") }
+          foreach ($script in Get-ChildItem tests/*.ps1) {
+            [System.Management.Automation.Language.Parser]::ParseFile($script.FullName,[ref]$tokens,[ref]$errors) | Out-Null
+            if ($errors.Count) { throw ($errors -join "`n") }
+          }
