@@ -75,3 +75,20 @@ The sixth changeset adds `inventory_relay`, a NOLOGIN role restricted to outbox
 reads and delivery metadata updates. No live login/password is provisioned.
 See docs/ADR-EVT-004-relay-database-capabilities.md. Migration acceptance also
 checks a synthetic TCP login and actual rejection of stock/payload/inbox writes.
+
+## Expiry Alert Storage
+
+The seventh additive changeset prepares Inventory-owned expiry alert evidence,
+one stable record per lot with explicit severity/state and retained timestamps.
+Only the owner writer may mutate evaluation fields; reader can inspect, relay
+cannot access, and Worker receives no database grant. No historical alerts are
+invented. Rollback rejects any retained evidence, even resolved records.
+See [ADR-WRK-001](docs/ADR-WRK-001-expiry-alert-storage.md).
+
+The existing Test-Migrations.ps1 now includes Test-ExpiryStorage.ps1 in its random
+disposable database: constraints, uniqueness, TCP app access, reader/relay denial,
+transitions, preserved stock/evidence, empty rollback and repeated application.
+CI parses PowerShell only; native Docker acceptance is separate. This prepares
+HU-WRK-001 but does not implement evaluation, scheduling, public API or frontend
+alerts and does not close the HU. No live dev/qa/main migration is performed here.
+Native results are recorded in [storage acceptance](docs/WRK-001-storage-acceptance.md).
