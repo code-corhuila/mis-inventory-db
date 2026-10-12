@@ -46,3 +46,11 @@ databaseChangeLog:
         - sqlFile: {path: ../03_dcl/002_relay.sql, relativeToChangelogFile: true}
       rollback:
         - sqlFile: {path: ../03_dcl/002_relay_rollback.sql, relativeToChangelogFile: true}
+  - changeSet:
+      id: inventory-expiry-alert-001
+      author: julian1614
+      labels: HU-WRK-001
+      changes:
+        - sqlFile: {path: ../01_ddl/005_expiry_alert.sql, relativeToChangelogFile: true}
+      rollback:
+        - sqlFile: {path: ../01_ddl/005_expiry_alert_rollback.sql, relativeToChangelogFile: true, splitStatements: false}
