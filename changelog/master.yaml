@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: inventory-model-001
+      author: julian1614
+      labels: HU-INV-001
+      changes:
+        - sqlFile: {path: ../01_ddl/001_inventory.sql, relativeToChangelogFile: true}
+      rollback:
+        - sql: DROP TABLE inventory.request,inventory.movement,inventory.entry,inventory.lot; DROP SCHEMA inventory;
+  - changeSet:
+      id: inventory-grants-001
+      author: julian1614
+      changes:
+        - sqlFile: {path: ../03_dcl/001_inventory.sql, relativeToChangelogFile: true}
+      rollback:
+        - sql: REVOKE inventory_writer FROM inventory_app; REVOKE UPDATE (available) ON inventory.lot FROM inventory_writer; REVOKE UPDATE (status,changed_by,changed_at) ON inventory.entry FROM inventory_writer; REVOKE ALL ON ALL TABLES IN SCHEMA inventory FROM inventory_reader,inventory_writer; REVOKE ALL ON SCHEMA inventory FROM inventory_reader,inventory_writer; DROP ROLE inventory_reader,inventory_writer;
+  - changeSet:
+      id: inventory-exits-001
+      author: julian1614
+      labels: HU-INV-003
+      changes:
+        - sqlFile: {path: ../01_ddl/002_exits.sql, relativeToChangelogFile: true}
+      rollback:
+        - sqlFile: {path: ../01_ddl/002_exits_rollback.sql, relativeToChangelogFile: true, splitStatements: false}
+  - changeSet:
+      id: inventory-outbox-001
+      author: julian1614
+      labels: HU-EVT-001
+      changes:
+        - sqlFile: {path: ../01_ddl/003_outbox.sql, relativeToChangelogFile: true, splitStatements: false}
+      rollback:
+        - sqlFile: {path: ../01_ddl/003_outbox_rollback.sql, relativeToChangelogFile: true, splitStatements: false}
